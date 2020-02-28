@@ -29,7 +29,8 @@ balance_grid        rcb cell
 global		    nrho 1.0 fnum 1e15 temp 300
 
 species		    air.species He
-mixture		    air He vstream 0 0 0
+mixture		    air He vstream 0 300 0
+mixture		    initial_pressure He vstream 0 0 0
 
 read_surf	    flat.dimensions invert
 surf_collide	    1 diffuse 300.0 0.0
@@ -37,8 +38,10 @@ surf_modify         all collide 1
 
 collide             vss air air.vss
 
-fix		    in emit/face air ylo region vent n 0.9 nevery 1&
+fix		    in emit/face air ylo region vent n 1 nevery 1&
 		    perspecies no
+
+# n = 0.9 not allowed, so this will be a little too large
 		    
 timestep	    .0000001
 
@@ -63,7 +66,7 @@ dump_modify	    4 region downstream_velocity
 stats		    10000
 stats_style	    step cpu np nattempt ncoll nscoll nscheck
 
-create_particles    air n 1740000
+create_particles    initial_pressure n 1740000
 
 fix                 2 adapt 100 all refine coarsen particle 30 5
 fix                 3 balance 200 1.1 rcb part
