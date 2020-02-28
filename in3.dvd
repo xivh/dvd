@@ -17,7 +17,7 @@ region		    denser union 2 column vent
 create_box  	    -.2 .2 0 .4 -0.5 0.5
 create_grid 	    10 10 1 region 2 denser 100 500 1
 
-balance_grid        rcb cell 
+balance_grid        rcb cell
 
 global		    nrho 1.0 fnum 1e17 temp 300
 

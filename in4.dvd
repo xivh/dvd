@@ -1,0 +1,78 @@
+# dvd simulation
+
+seed	    	    12345
+dimension   	    2
+global              gridcut 0.0 comm/sort yes cellmax 10000
+
+boundary	    o o p
+
+region		    left_vent block -.045 -.03 0 0.05 -0.5 0.5
+region		    right_vent block .03 .045 0 0.05 -0.5 0.5
+region		    vent union 2 left_vent right_vent
+region		    column block -.05 .05 .064 .27 -0.5 0.5
+region		    top_block block -.015 .015 .06 .06 -0.5 0.5
+region		    denser union 2 column vent
+region		    downstream_velocity block -.03 .03 .17 .18 -0.5 0.5
+region		    downstream_pressure block -.2 -.19 .2 .21 -0.5 0.5
+
+group		    upstream grid region vent all
+group		    downstream grid region downstream_pressure all
+
+
+create_box  	    -.2 .2 0 .4 -0.5 0.5
+#create_grid 	    10 10 1 region 2 denser 100 500 1
+
+create_grid	    20 20 1 region 2 vent 5 5 1
+
+balance_grid        rcb cell
+
+global		    nrho 1.0 fnum 1e15 temp 300
+
+species		    air.species He
+mixture		    air He vstream 0 0 0
+
+read_surf	    flat.dimensions invert
+surf_collide	    1 diffuse 300.0 0.0
+surf_modify         all collide 1
+
+collide             vss air air.vss
+
+fix		    in emit/face air ylo region vent n 0.9 nevery 1&
+		    perspecies no
+		    
+timestep	    .0000001
+
+		    
+compute		    1 thermal/grid all air press
+fix 		    1 ave/grid all 10 100 1000 c_1[*]
+dump 		    1 grid upstream 10000 press.vent.bin id f_1[*]
+dump		    2 grid downstream 10000 press.downstream.bin id f_1[*]
+
+dump		    3 particle all 10000 part.vent.bin id x y z vx vy vz
+dump		    4 particle all 10000 part.downstream.bin id x y z vx vy vz
+dump  		    5 image all 1000 partim.*.ppm type type zoom 3 &
+		    surf proc .01 size 512 512 pdiam 0.001
+
+dump		    6 image all 1000 pressim.*.ppm type type zoom 3 &
+		    surf one .01 size 512 512 pdiam 0.001 particle no&
+		    grid proc
+
+dump_modify	    3 region vent
+dump_modify	    4 region downstream_velocity
+
+stats		    10000
+stats_style	    step cpu np nattempt ncoll nscoll nscheck
+
+create_particles    air n 1740000
+
+fix                 2 adapt 100 all refine coarsen particle 30 5
+fix                 3 balance 200 1.1 rcb part
+
+run 		    50000
+
+unfix		    2
+unfix		    3
+fix                 2 adapt 1000 all refine coarsen particle 30 5
+fix                 3 balance 2000 1.1 rcb part
+
+run		    300000
