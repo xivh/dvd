@@ -1,0 +1,59 @@
+# dvd simulation
+
+seed	    	    12345
+dimension   	    2
+global              gridcut 0.0 comm/sort yes cellmax 1000
+
+boundary	    o o p
+
+region		    left_vent block -.045 -.03 0 0 -0.5 0.5
+region		    right_vent block .03 .045 0 0 -0.5 0.5
+region		    vent union 2 left_vent right_vent
+region		    column block -.05 .05 .064 .27 -0.5 0.5
+region		    top_block block -.015 .015 .06 .06 -0.5 0.5
+region		    denser union 2 column vent
+
+
+create_box  	    -.2 .2 0 .4 -0.5 0.5
+create_grid 	    10 10 1 region 2 denser 100 500 1
+
+balance_grid        rcb cell 
+
+global		    nrho 1.0 fnum 1e17 temp 300
+
+species		    air.species He
+mixture		    air He vstream 0 0 0 
+
+read_surf	    flat.dimensions invert
+surf_collide	    1 diffuse 300.0 0.0
+surf_modify         all collide 1
+
+collide             vss air air.vss
+
+fix		    in emit/face air ylo region vent perspecies no &
+		    subsonic 74 300
+
+#fix		    out emit/face air yhi xlo xhi subsonic 5 300
+
+timestep	    .0000001
+
+		    
+compute		    1 thermal/grid all air press
+fix 		    1 ave/grid all 10 100 1000 c_1[*]
+#dump 		    3 grid all 1000 press.grid id f_1[*]
+
+#dump		    1 particle all 1000 part.step id x y z vx vy vz
+dump  		    2 image all 1000 partim.*.ppm type type zoom 3 &
+		    surf proc .01 size 512 512 pdiam 0.001
+
+dump		    4 image all 1000 pressim.*.ppm type type zoom 3 &
+		    surf proc .01 size 512 512 pdiam 0.001 particle no&
+		    grid f_1[*]
+
+
+stats		    1000
+stats_style	    step cpu np nattempt ncoll nscoll nscheck
+
+create_particles    air n 15460
+
+run 		    20000
