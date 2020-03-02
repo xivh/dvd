@@ -9,9 +9,6 @@ boundary	    o o p
 region		    left_vent block -.045 -.03 0 0.05 -0.5 0.5
 region		    right_vent block .03 .045 0 0.05 -0.5 0.5
 region		    vent union 2 left_vent right_vent
-region		    column block -.05 .05 .064 .27 -0.5 0.5
-region		    top_block block -.015 .015 .06 .06 -0.5 0.5
-region		    denser union 2 column vent
 region		    downstream_velocity block -.03 .03 .17 .18 -0.5 0.5
 region		    downstream_pressure block -.2 -.19 .2 .21 -0.5 0.5
 
@@ -73,8 +70,8 @@ fix                 3 balance 200 1.1 rcb part
 
 run 		    50000
 
-unfix		    2
-unfix		    3
+unfix               2 # not unfixing = segfault
+unfix               3
 fix                 2 adapt 1000 all refine coarsen particle 30 5
 fix                 3 balance 2000 1.1 rcb part
 
