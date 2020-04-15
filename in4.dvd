@@ -15,18 +15,16 @@ region		    downstream_pressure block -.2 -.19 .2 .21 -0.5 0.5
 group		    upstream grid region vent all
 group		    downstream grid region downstream_pressure all
 
-
 create_box  	    -.2 .2 0 .4 -0.5 0.5
-#create_grid 	    10 10 1 region 2 denser 100 500 1
 
 create_grid	    20 20 1 region 2 vent 5 5 1
 
 balance_grid        rcb cell
 
-global		    nrho 1.0 fnum 1e15 temp 300
+global		    nrho 1.0 fnum 1e10 temp 300
 
 species		    air.species He
-mixture		    air He vstream 0 300 0
+mixture		    air He vstream 0 1000 0
 mixture		    initial_pressure He vstream 0 0 0
 
 read_surf	    flat.dimensions invert
@@ -35,14 +33,12 @@ surf_modify         all collide 1
 
 collide             vss air air.vss
 
-fix		    in emit/face air ylo region vent n 1 nevery 1&
+fix		    in emit/face air ylo region vent n 9000 nevery 1&
 		    perspecies no
 
-# n = 0.9 not allowed, so this will be a little too large
-		    
 timestep	    .0000001
 
-		    
+
 compute		    1 thermal/grid all air press
 fix 		    1 ave/grid all 10 100 1000 c_1[*]
 dump 		    1 grid upstream 10000 press.vent.bin id f_1[*]
@@ -63,16 +59,9 @@ dump_modify	    4 region downstream_velocity
 stats		    10000
 stats_style	    step cpu np nattempt ncoll nscoll nscheck
 
-create_particles    initial_pressure n 1740000
+create_particles    initial_pressure n 272000000000 # 45 Pa
 
-fix                 2 adapt 100 all refine coarsen particle 30 5
-fix                 3 balance 200 1.1 rcb part
-
-run 		    50000
-
-unfix               2 # not unfixing = segfault
-unfix               3
 fix                 2 adapt 1000 all refine coarsen particle 30 5
 fix                 3 balance 2000 1.1 rcb part
 
-run		    300000
+run		    325000
