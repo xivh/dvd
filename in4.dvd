@@ -33,7 +33,7 @@ surf_modify         all collide 1
 
 collide             vss air air.vss
 
-fix		    in emit/face air ylo region vent n 9000 nevery 1&
+fix		    in emit/face air ylo region vent n 90000 nevery 1&
 		    perspecies no
 
 timestep	    .0000001

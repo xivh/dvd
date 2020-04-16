@@ -1,2 +1,7 @@
 log.*
 *~
+*.dat
+speedtest/
+temp/
+gnu/
+*.txt
