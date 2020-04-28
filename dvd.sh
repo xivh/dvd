@@ -6,4 +6,4 @@
 #SBATCH --partition=parallel
 #SBATCH -A wadleygroup
 
-srun ../spa_mpi < speedtest.dvd
+srun ../spa_mpi < in.dvd
