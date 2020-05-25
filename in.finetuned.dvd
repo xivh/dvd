@@ -21,7 +21,7 @@ global		    nrho 1.0 fnum 1e12 temp 300
 species		    air.species He
 mixture		    air He vstream 0 1000 0
 
-read_surf	    flat.dimensions invert
+read_surf	    simple.dimensions invert
 surf_collide	    1 diffuse 300.0 0.0
 surf_modify         all collide 1
 
@@ -41,7 +41,7 @@ dump		    1 image all 10000 pressim.*.ppm type type zoom 3 &
 dump		    2 image all 10000 grid.*.ppm type type zoom 3 surf one .01 size 512 512 grid proc gline yes .003 particle no
 
 stats		    1000
-stats_style	    step elaplong cpu wall np nattempt ncoll maxlevel nchild
+stats_style	    step cpu wall np nattempt ncoll maxlevel nchild
 
 fix                 2 adapt 20000 all refine coarsen particle 30 5
 fix                 3 balance 20000 1.1 rcb cell # changed from part?
