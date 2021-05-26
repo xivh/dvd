@@ -18,9 +18,9 @@ region		    around_vent union 3 below_vent above_vent vent
 
 region		    gaschamber block -0.2 0.2 -0.4 0 -0.5 0.5
 
-create_grid	    20 20 1 region 2 around_vent 2 2 1 region 3 vent 2 2 1
+#create_grid	    20 20 1 region 2 around_vent 2 2 1 region 3 vent 2 2 1
 
-#create_grid	    20 20 1
+create_grid	    40 40 1
 
 balance_grid        rcb cell
 
@@ -31,7 +31,6 @@ mixture		    air He vstream 0 0 0
 
 # clockwise is a positive surface
 read_surf	    simple.dimensions invert group 1
-#read_surf	    block.dimensions group 2
 
 surf_collide	    1 diffuse 300.0 0.0
 surf_modify         all collide 1
@@ -51,6 +50,13 @@ compute             3 grid all all v
 
 fix                 1 ave/grid all 5 50 10000 c_1[*]
 fix		    2 ave/grid all 5 50 10000 c_3[*]
+
+# rebalance simulation to speed up
+fix		    rebalance balance 50000 1.2 rcb time
+
+# resize grid to have 10 to 30 particles per cell
+fix	     	    resize adapt 50000 around_vent refine coarsen particle 10 30
+
 
 # dump  	    particle_images image all 10000 partim.*.ppm type type zoom 2 &
 # 		    surf proc .01 size 512 512 pdiam 0.001 gline yes 0.01
@@ -75,7 +81,7 @@ stats_style	    step cpu np nattempt ncoll nscoll nscheck
 
 run		    1000000
 
-# write_restart	    1-1pa-500000.restart
+write_restart	    in.dvd.restart
 
 # fix		    inflow emit/face air ylo subsonic 10 300
 # unfix		    outflow
