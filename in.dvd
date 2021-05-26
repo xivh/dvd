@@ -4,71 +4,91 @@ seed	    	    12345
 dimension   	    2
 global              gridcut 0.0 comm/sort yes cellmax 10000
 
-boundary	    o o p
+boundary	    r o p
 
-region		    left_vent block -.045 -.03 0 0.05 -0.5 0.5
-region		    right_vent block .03 .045 0 0.05 -0.5 0.5
+create_box  	    -.2 .2 -0.4 .4 -0.5 0.5
+
+region		    left_vent block -.05 -.03 0 0.1 -0.5 0.5
+region		    right_vent block .03 .05 0 0.1 -0.5 0.5
 region		    vent union 2 left_vent right_vent
-region		    downstream_velocity block -.03 .03 .17 .18 -0.5 0.5
-region		    downstream_pressure block -.2 -.19 .2 .21 -0.5 0.5
 
-group		    upstream grid region vent one
-group		    downstream grid region downstream_pressure one
+region		    below_vent block -0.1 0.1 -0.15 0 -0.5 0.5
+region		    above_vent block -0.1 0.1 0.1 0.2 -0.5 0.5
+region		    around_vent union 3 below_vent above_vent vent
 
-create_box  	    -.2 .2 0 .4 -0.5 0.5
+region		    gaschamber block -0.2 0.2 -0.4 0 -0.5 0.5
 
-read_grid	    325_2k.grid
+#create_grid	    20 20 1 region 2 around_vent 2 2 1 region 3 vent 2 2 1
+
+create_grid	    40 40 1
 
 balance_grid        rcb cell
 
-global		    nrho 1.0 fnum 1e13 temp 300
+global		    nrho 1.0 fnum 1e16 temp 300
 
 species		    air.species He
 mixture		    air He vstream 0 0 0
-mixture		    initial_pressure He vstream 0 0 0
 
-read_surf	    flat.dimensions invert
+# clockwise is a positive surface
+read_surf	    simple.dimensions invert group 1
+
 surf_collide	    1 diffuse 300.0 0.0
 surf_modify         all collide 1
 
 collide             vss air air.vss
 
-fix		    in emit/face air ylo region vent n 900 nevery 1&
-		    perspecies no
+create_particles    air n 135000 region gaschamber
+
+fix		    inflow emit/face air ylo subsonic 35 300
+#fix		    outflow emit/face air all subsonic 3 300
 
 timestep	    .0000001
 
-# how to weight pressures to cell sizes - something to consider
-compute		    1 thermal/grid all air press
-fix 		    1 ave/grid all 10 100 1000 c_1[*]
-dump 		    1 grid upstream 10000 press.vent id f_1[*]
-dump		    2 grid downstream 10000 press.downstream id f_1[*]
+compute             1 thermal/grid all air press
+compute		    2 ke/particle
+compute             3 grid all all v
 
-dump		    3 particle all 10000 part.vent id x y z vx vy vz
-dump		    4 particle all 10000 part.downstream id x y z vx vy vz
-#dump  		    5 image all 1000 partim.*.ppm type type zoom 3 &
-		    surf proc .01 size 512 512 pdiam 0.001
+fix                 1 ave/grid all 5 50 10000 c_1[*]
+fix		    2 ave/grid all 5 50 10000 c_3[*]
 
-dump		    6 image all 1000 pressim.*.ppm type type zoom 3 &
-		    surf one .01 size 512 512 pdiam 0.001 particle no grid f_1[*]
+# rebalance simulation to speed up
+fix		    rebalance balance 50000 1.2 rcb time
 
-#dump		    7 image all 50000 grid.*.ppm type type zoom 3 surf one .01 &
-		    size 512 512 grid proc gline yes .003 particle no
+# resize grid to have 10 to 30 particles per cell
+fix	     	    resize adapt 50000 around_vent refine coarsen particle 10 30
 
-dump		    8 grid all 325000 press.final xc yc f_1[*]
-dump		    9 particle all 325000 part.final x y z vx vy vz
 
-dump_modify	    3 region vent
-dump_modify	    4 region downstream_velocity
+# dump  	    particle_images image all 10000 partim.*.ppm type type zoom 2 &
+# 		    surf proc .01 size 512 512 pdiam 0.001 gline yes 0.01
 
-stats		    1000
-stats_style	    step cpu wall np nattempt ncoll maxlevel nchild
+dump		    pressure_images image all 10000 pressim.*.ppm type type zoom 2 &
+		    surf one .01 size 512 700 pdiam 0.001 particle no&
+		    gline no .005 grid f_1[*]
 
-#create_particles    initial_pressure n 272000000000 # 45 Pa
+dump	            vy_images image all 10000 vyim.*.ppm type type zoom 2 &
+                     surf one .01 size 512 700 pdiam 0.001 particle no&
+                     gline no .005 grid f_2[*]
 
-fix                 2 adapt 50000 all refine coarsen particle 30 5
-fix                 3 balance 25000 1.1 rcb cell
+dump_modify	    pressure_images scolor one red
+dump_modify 	    pressure_images cmap grid 0 100 ca 0 5 min blue 17 purple 35 red 70 green max white
+dump_modify         pressure_images pad 7
 
-run		    325000
+dump_modify	    vy_images scolor one red pad 7 cmap grid 0 1000 ca 0 6 min blue 200 red 400 orange 600&
+		    yellow 800 green max white
 
-write_grid	    parent 325_13_900.grid
+stats		    10000
+stats_style	    step cpu np nattempt ncoll nscoll nscheck
+
+run		    1000000
+
+write_restart	    in.dvd.restart
+
+# fix		    inflow emit/face air ylo subsonic 10 300
+# unfix		    outflow
+
+# fix		    rebalance balance 50000 1.2 rcb time
+
+# dump_modify	    pressure_images cmap grid 0 100 ca 0.0 5 min blue 17 red 35 yellow 50 green max white
+# dump_modify         vy_images scolor one red pad 7 cmap grid 0 1000 ca 0.0 6 min blue 200 red&
+#  		    400 orange 600 yellow 800 green max white
+# run                 500000
