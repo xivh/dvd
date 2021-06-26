@@ -17,3 +17,9 @@ You can either run SPARTA in the command line or use the dvd.sh script to submit
 If you use the dvd.sh script, make sure your SPARTA executable and all the simulation files are located in the right relative locations to the script.
 
 You can look at the videos I made or contact me if you need more help. I went through the input files and tried to leave helpful comments as well.
+
+If you need the exact SPARTA file I used for some reason, it is on the spa_mpi branch.
+
+## General Thoughts
+
+This is my opinion on how to move the project forward.
