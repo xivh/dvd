@@ -1,0 +1,74 @@
+# dvd simulation
+
+seed	    	    12345
+dimension   	    2
+global              gridcut 0.0 comm/sort yes cellmax 10000
+
+boundary	    o o p
+
+region		    left_vent block -.045 -.015 0 0.05 -0.5 0.5
+region		    right_vent block .015 .045 0 0.05 -0.5 0.5
+region		    vent union 2 left_vent right_vent
+region		    downstream_velocity block -.03 .03 .17 .18 -0.5 0.5
+region		    downstream_pressure block -.2 -.19 .2 .21 -0.5 0.5
+
+group		    upstream grid region vent one
+group		    downstream grid region downstream_pressure one
+
+create_box  	    -.2 .2 0 .4 -0.5 0.5
+
+read_grid	    fnum12_900_60k.grid
+
+balance_grid        rcb cell
+
+global		    nrho 1.0 fnum 1e12 temp 300
+
+species		    air.species He
+mixture		    air He vstream 0 500 0
+mixture		    initial_pressure He vstream 0 0 0
+
+read_surf	    simple.dimensions invert
+surf_collide	    1 diffuse 300.0 0.0
+surf_modify         all collide 1
+
+collide             vss air air.vss
+
+fix		    in emit/face air ylo region vent n 900 nevery 1&
+		    perspecies no
+
+timestep	    .0000001
+
+# how to weight pressures to cell sizes - something to consider
+compute		    1 thermal/grid all air press
+fix 		    1 ave/grid all 10 100 1000 c_1[*]
+#dump 		    1 grid upstream 10000 press.vent id f_1[*]
+#dump		    2 grid downstream 10000 press.downstream id f_1[*]
+
+dump		    3 particle all 25000 part.vent id x y z vx vy vz
+dump		    4 particle all 25000 part.downstream id x y z vx vy vz
+#dump  		    5 image all 2000 partim.*.ppm type type zoom 3 &
+		    surf proc .01 size 512 512 pdiam 0.001
+
+dump		    6 image all 2000 pressim.*.ppm type type zoom 3 &
+		    surf one .01 size 512 512 pdiam 0.001 particle no grid f_1[*]
+
+dump		    7 image all 50000 grid.*.ppm type type zoom 3 surf one .01 &
+		    size 512 512 grid proc gline yes .003 particle no
+
+dump		    8 grid all 325000 press.final xc yc f_1[*]
+dump		    9 particle all 325000 part.final x y z vx vy vz
+
+dump_modify	    3 region vent
+dump_modify	    4 region downstream_velocity
+
+stats		    1000
+stats_style	    step cpu wall np nattempt ncoll maxlevel nchild
+
+#create_particles    initial_pressure n 272000000000 # 45 Pa
+
+fix                 2 adapt 50000 all refine coarsen particle 30 5
+fix                 3 balance 25000 1.1 rcb cell
+
+run		    325000
+
+write_grid	    parent 325_12_900.grid

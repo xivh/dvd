@@ -1,0 +1,50 @@
+# dvd mfp2 grid creator
+
+seed	    	    12345
+dimension   	    2
+global              gridcut 0.0 comm/sort yes cellmax 10000
+
+boundary	    o o p
+
+region		    left_vent block -.045 .03 0 .064 -0.5 0.5
+region		    right_vent block .03 .045 0 .064 -0.5 0.5
+region		    vent_bottom union 2 left_vent right_vent
+region		    vent_top block -.075 .075 .064 .116 -0.5 0.5
+region		    vent union 2 vent_top vent_bottom
+region		    column block -.075 .075 .116 .4 -0.5 0.5
+region		    upstream union 2 vent column
+region		    downstream block -.2 .2 .116 .4 -0.5 0.5
+region		    unblocked union 2 downstream vent
+
+create_box  	    -.2 .2 0 .4 -0.5 0.5
+
+# grid should be about right, dummy level 1 for coarsening, 001 x .001 level 2, 5*10^-4 level 3, 2.5*10^-4 level 4
+create_grid	    40 40 1 level 2 * * * 10 10 1 region 3 unblocked 2 2 1 region 4 upstream 2 2 1
+
+balance_grid        rcb cell
+
+global		    nrho 1.0 fnum 1e10 temp 300
+
+species		    air.species He
+mixture		    air He vstream 0 1000 0
+
+read_surf	    flat.dimensions invert
+surf_collide	    1 diffuse 300.0 0.0
+surf_modify         all collide 1
+
+collide             vss air air.vss
+
+fix		    in emit/face air ylo region vent n 1 nevery 1&
+		    perspecies no
+
+timestep	    .0000001
+
+#works better with 40x40 level 1
+dump		    1 image all 100 grid.*.ppm type type zoom 3 size 512 512 surf one .01 grid proc gline yes .003
+
+stats		    100
+stats_style	    step cpu np nattempt ncoll nscoll nscheck
+
+run		    100
+
+write_grid	    parent mfp2.grid
